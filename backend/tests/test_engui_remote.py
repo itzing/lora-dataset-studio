@@ -186,3 +186,43 @@ def test_exact_export_is_25_pairs_without_extra_reference(client, provider):
         db.session.commit()
         with pytest.raises(ValueError, match='Caption'):
             svc.write_export_zip('local', dataset_id, io.BytesIO(), exact_25=True)
+
+
+def test_tall_drawn_reference_survives_upload_and_remote_snapshot(client, provider):
+    """The user's 400x1024 reference lost its head to a centered square."""
+    from app.services.face_variations import select_preset, presets_for
+    dsid = client.post('/api/dataset/create', json={
+        'name': 'Drawn character', 'trigger_word': 'drawn_ref', 'subject_type': 'anime'}).json['id']
+    im = Image.new('RGB', (400, 1024), 'green')
+    im.paste('red', (0, 0, 400, 140))  # head, outside the old centered square
+    im.paste('blue', (0, 900, 400, 1024))  # feet, also outside it
+    raw = io.BytesIO(); im.save(raw, 'PNG')
+    uploaded = client.post(f'/api/dataset/{dsid}/ref', data={
+        'file': (io.BytesIO(raw.getvalue()), 'character.png')}, content_type='multipart/form-data')
+    assert uploaded.status_code == 200
+    with client.application.app_context():
+        shot = select_preset(next(iter(presets_for('anime'))), 'anime')[0]
+        remote.generate('local', dsid, [shot])
+        job = EnguiDatasetJob.query.one()
+        pinned = Image.open(remote._root() / (job.reference_hash + '.png')).convert('RGB')
+        assert pinned.size == (400, 1024)
+        assert pinned.getpixel((200, 50))[0] > 220
+        assert pinned.getpixel((200, 975))[2] > 220
+        prompt = json.loads(job.payload_json)['prompt']
+        assert 'Professional realistic photograph' not in prompt
+        assert 'Create a new photograph' not in prompt
+        assert 'same signature outfit' in prompt
+        assert 'same drawn anime art style' in prompt
+        assert not provider[1]  # inspection does not itself dispatch a paid job
+
+
+def test_explicit_manual_crop_remains_the_remote_reference(client, provider):
+    dsid = _dataset_with_ref(client)
+    with client.application.app_context():
+        ds = svc.get_dataset('local', dsid)
+        original = Path(svc._ref_crop_source_path(ds)).read_bytes()
+        assert svc.crop_reference('local', dsid, 0, 0, 24, 40)
+        remote.generate('local', dsid, _shots(1))
+        job = EnguiDatasetJob.query.one()
+        assert Image.open(remote._root() / (job.reference_hash + '.png')).size == (24, 40)
+        assert Path(svc._ref_crop_source_path(ds)).read_bytes() == original

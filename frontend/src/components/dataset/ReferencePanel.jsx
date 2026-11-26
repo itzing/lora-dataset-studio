@@ -15,7 +15,7 @@ export default function ReferencePanel({ refFilename, datasetId, onSetRef, onCro
   const inp = useRef(null);
   const inpExtra = useRef(null);
   // Auto head-crop = OPT-IN (vision pass, pauses ComfyUI). Default OFF: upload is
-  // instant (centered square) and ✂ Crop adjusts manually — faster in practice.
+  // instant (full frame preserved); ✂ Crop is an explicit manual adjustment.
   const [autoCrop, setAutoCrop] = useState(false);
   // ✎ next to the Extra-refs "+": the identity instruction those extra photos
   // ride on is a GLOBAL setting buried in Settings ▸ Image engines — reachable
@@ -31,12 +31,12 @@ export default function ReferencePanel({ refFilename, datasetId, onSetRef, onCro
       <div className="flex items-center gap-3">
         <div className="w-20 h-20 rounded-lg bg-black overflow-hidden shrink-0 flex items-center justify-center">
           {refFilename
-            ? <img src={imgUrl(refFilename)} alt="ref" className="w-full h-full object-cover" />
+            ? <img src={imgUrl(refFilename)} alt="Generation reference — full frame" className="w-full h-full object-contain" />
             : <span className="text-content-subtle text-xs">none</span>}
         </div>
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-content text-sm font-medium">Reference photo</span>
+            <span className="text-content text-sm font-medium">Reference image</span>
             {waiting && (
               // A button, not a label: the whole point is to lead somewhere, and
               // the modal it opens is where Keep and Discard live.
@@ -48,7 +48,7 @@ export default function ReferencePanel({ refFilename, datasetId, onSetRef, onCro
               </button>
             )}
           </div>
-          <span className="text-content-subtle text-[0.6875rem]">source of Klein variations — crop with ✂ after upload</span>
+          <span className="text-content-subtle text-[0.6875rem]">The primary image used for generation. Keep the face and defining features visible.</span>
           <div className="flex gap-1.5 items-center flex-wrap">
             <button type="button" onClick={() => inp.current?.click()} disabled={importBusy}
               className="px-2.5 py-1 rounded-lg bg-surface-raised text-content text-xs disabled:opacity-40">
@@ -64,7 +64,7 @@ export default function ReferencePanel({ refFilename, datasetId, onSetRef, onCro
                 className="px-2.5 py-1 rounded-lg bg-surface-raised text-content text-xs disabled:opacity-40">✦ Edit</button>
             )}
             <label className="flex items-center gap-1 text-[0.625rem] text-content-muted cursor-pointer"
-              title={visionBusy ? 'Auto head-crop is unavailable during local generation; the reference imports with a centered crop.' : 'ON: a vision pass finds the head and crops around it (slower, pauses ComfyUI). OFF (default): instant centered square — adjust with ✂ Crop, usually faster.'}>
+              title={visionBusy ? 'Auto head-crop is unavailable during local generation; the complete reference image is kept.' : 'ON: a vision pass finds the head and crops around it (slower, pauses ComfyUI). OFF (default): keep the complete image. Use ✂ Crop only if you want to change the framing.'}>
               <input type="checkbox" checked={autoCrop} disabled={visionBusy} onChange={(e) => setAutoCrop(e.target.checked)}
                 className="accent-indigo-500 w-3 h-3" />
               ✂ Auto head-crop{visionBusy ? ' — unavailable during local generation' : ''}
@@ -125,6 +125,11 @@ export default function ReferencePanel({ refFilename, datasetId, onSetRef, onCro
             onChange={(e) => { if (e.target.files[0]) onAddExtraRef?.(e.target.files[0]); e.target.value = ''; }} />
         </div>
       )}
+      <p className="text-content-subtle text-[0.6875rem]">
+        Krea 2 Edit (including Engui) uses only the primary reference, not Extra refs.
+        For a drawn character, choose Anime under Generate variations → Subject type;
+        Human requests realistic photographs.
+      </p>
       {/* The modal edits the prompts of THIS dataset's subject — a human lock
           shown on an Animal dataset is what made an animal-tuned text leak into
           human generations. */}

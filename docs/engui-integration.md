@@ -8,7 +8,7 @@ This experimental fork preserves Dataset Studio's shot catalog, subject-specific
 A same-host installation may use an HTTP loopback origin; other connections require HTTPS.
 
 2. Save the connection, then Test. Enable Krea 2 Edit · Engui and select it in the dataset's Generate panel.
-3. Upload/crop the reference, choose the appropriate subject type and the Studio shot cards, then generate candidates. Each candidate is an ordinary billed RunPod job. No local ComfyUI is required.
+3. Upload the reference and verify that its thumbnail contains the face and defining features. Upload keeps the full frame; Crop is optional. For a drawn character choose **Generate variations → Subject type → Anime** (the existing drawn-character catalog); **Human requests realistic photographs**. Krea uses only the primary reference, not Extra refs. Select the new subject-specific cards, then generate a few candidates before a full set. Each candidate is an ordinary billed RunPod job. No local ComfyUI is required.
 4. Keep or reject the returned originals. Retry uses the same card's prompt wrapper and current reference/tuning, with a new explicit attempt. Review identity and anatomy; automatic consistency is not a guarantee.
 5. Keep exactly 25 images and give every kept image a caption. **Export 25** writes exactly 25 image/TXT pairs, excluding the extra reference. The existing Export ZIP behavior is unchanged and may include the reference as an extra image.
 
@@ -25,3 +25,7 @@ The token is stored server-side as `LDS_ENGUI_TOKEN` (environment or Studio's se
 The authenticated POST `/api/dataset-studio` bridge must be enabled by the operator with `ENGUI_DATASET_STUDIO_ENABLED=1` and `ENGUI_MCP_ENABLED=1`, and Krea2 Turbo must be operator-approved/configured. It reuses the current upload, immutable-plan, job queue, cancellation and original-artifact storage. The matching worker image must include Krea2 Identity Edit v1.2 weights and pinned nodes at build time. No new GPU endpoint, worker quota, network model disk, or public MCP tool is required. The proxy must route this authenticated bridge path as well as existing MCP upload/artifact paths.
 
 RunPod-native Batch Jobs are deliberately deferred. This feature neither requests them nor promises that separate ordinary jobs will reuse one warm worker. The fork retains the upstream noncommercial license. Commercial permission and later training integration are separate decisions.
+
+## Reference framing fix
+
+The fork no longer silently center-crops uploaded references to squares. Explicit automatic head-cropping is retained; if detection fails, it keeps the complete image and explains the fallback. Manual crops remain respected by Engui. The reference thumbnail uses contain, showing the same full frame the engine receives. Existing queued prompts/reference snapshots are immutable: stop an incorrect run and select fresh cards after changing subject type, rather than retrying old Human cards.

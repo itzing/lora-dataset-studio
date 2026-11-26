@@ -23,3 +23,9 @@ After correcting the two integration-specific contract issues, all 136 remaining
 These checks do not prove character identity quality, do not generate a real 25-image character dataset, and do not train a LoRA. Those require the user's reference, visual curation and captions. Browser-driven UI verification was not available in the deployment environment; frontend tests and HTTP checks do not substitute for that claim.
 
 See [connection and workflow instructions](engui-integration.md). Keep this branch experimental until the operator has qualified its worker and the first real dataset.
+
+## Full-body reference regression (2026-11-26)
+
+A real illustrated character exposed two setup pitfalls that the synthetic GPU transport test did not cover: the upstream default upload removed the head with a centered square, and Human prompts requested photographs. The fork now preserves the full frame by default and after unsuccessful automatic head detection, shows an uncropped reference preview, and documents the existing Anime catalog for drawn subjects. Explicit manual cropping remains honored.
+
+65 focused backend checks passed, including portrait upload → pinned remote reference with both head/feet markers, illustrated prompt selection, explicit manual cropping, failed head detection, HEIC import, original retention and remote/local multi-engine workflows. Ruff, ESLint and the frontend production build passed. No new GPU generation or identity-quality claim was made for this fix.

@@ -303,10 +303,9 @@ def dataset_set_ref(dataset_id):
                     'generated variations will inherit the softness. A sharper photo gives a better LoRA.')
     except Exception:
         pass
-    # Automatic head cropping is opt-in (crop=1). Default to an instant
-    # PIL-only centered square without vision or pausing ComfyUI. Users adjust
-    # it with Crop from the full-frame original. Match photo-import UX;
-    # Reset to auto remains the explicit vision path.
+    # Keep the complete reference by default. A centered square can silently
+    # remove the head from a full-body character. Only crop on explicit request;
+    # a failed detector must also retain the full frame, not guess its center.
     want_auto = request.form.get('crop', '0') == '1'
     try:
         if want_auto:
@@ -314,8 +313,9 @@ def dataset_set_ref(dataset_id):
                 webp, head_detected = svc.face_crop_to_square_webp(
                     raw, pad=svc.REF_CROP_PAD, return_detected=True)
         else:
-            webp, head_detected = svc.face_crop_to_square_webp(
-                raw, pad=svc.REF_CROP_PAD, return_detected=True, use_vision=False)
+            head_detected = False
+        if not head_detected:
+            webp = svc.normalize_to_webp(raw, size=1024)
     except Exception as e:
         return _map_error(e)
     # Serialize the physical files, DB pointer, and edit-epoch invalidation with
@@ -339,15 +339,15 @@ def dataset_set_ref(dataset_id):
         # GUARD-RAIL: don't silently ship a body-centered crop when auto WAS asked.
         # Tell the user WHY it didn't run — the usual cause on a fresh install is the
         # Ollama vision model not being pulled — and how to recover (Setup + Crop).
-        # (Manual mode: the centered crop is the intended behavior, no warning.)
+        # Manual mode retains the full frame without invoking vision.
         from ..services import vision_llm
         model_ready = vision_llm.probe_model()['ok']
         _llm = 'LM Studio' if vision_llm.provider() == 'lmstudio' else 'Ollama'
         resp['warning'] = (
             f"Auto head-crop needs the {_llm} vision model, which isn't ready yet — "
-            f'used a centered crop. Finish the {_llm} step in Setup, then click Crop to re-center on the face.'
+            f'kept the full image. Finish the {_llm} step in Setup, then click Crop to re-center on the face.'
             if not model_ready else
-            "Couldn't detect a face — used a centered crop. Use the Crop button to adjust it manually."
+            "Couldn't detect a face — kept the full image. Use the Crop button to adjust it manually."
         )
     if low_res_warning:
         resp['warning'] = f"{resp['warning']} {low_res_warning}" if resp.get('warning') else low_res_warning
@@ -421,9 +421,9 @@ def dataset_ref_recrop_auto(dataset_id):
         _llm = 'LM Studio' if vision_llm.provider() == 'lmstudio' else 'Ollama'
         resp['warning'] = (
             f"Auto head-crop needs the {_llm} vision model, which isn't ready yet — "
-            f'used a centered crop. Finish the {_llm} step in Setup, then adjust with Crop.'
+            f'kept the full image. Finish the {_llm} step in Setup, then adjust with Crop.'
             if not model_ready else
-            "Couldn't detect a face — used a centered crop. Use Crop to adjust it manually."
+            "Couldn't detect a face — kept the full image. Use Crop to adjust it manually."
         )
     return jsonify(resp)
 

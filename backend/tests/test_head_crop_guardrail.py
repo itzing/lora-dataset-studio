@@ -157,22 +157,38 @@ def test_ref_route_no_warning_when_head_detected(client, monkeypatch):
 
 
 def test_ref_route_default_is_manual_no_vision_no_warning(client, monkeypatch):
-    """Default upload (no crop field): pure-PIL centered square — the GPU window
-    must NOT open, no vision call, and the centered crop is intended (no warning)."""
+    """Default upload keeps the full frame without vision or head-crop."""
     import app.routes.datasets as dr
     did = _create_concept_free_dataset(client)
     def boom():
         raise AssertionError('GPU window must not open on a manual-mode ref upload')
     monkeypatch.setattr(dr, 'gpu_exclusive_vision_window', boom)
-    captured = {}
-    def fake_crop(raw, **k):
-        captured.update(k)
-        return (b'RIFFwebp', False)
-    monkeypatch.setattr(dr.svc, 'face_crop_to_square_webp', fake_crop)
+    monkeypatch.setattr(dr.svc, 'face_crop_to_square_webp', lambda *a, **k: boom())
     resp = client.post(f'/api/dataset/{did}/ref',
                        data={'file': (io.BytesIO(_png(900, 900)), 'ref.png')},
                        content_type='multipart/form-data')
     body = resp.get_json()
     assert resp.status_code == 200 and body['ok'] is True
-    assert captured.get('use_vision') is False
-    assert 'warning' not in body           # centered crop is the intended behavior
+    assert body['head_crop'] is False
+    assert 'warning' not in body
+
+
+def test_failed_auto_crop_keeps_full_portrait_instead_of_center(client, monkeypatch):
+    import os
+    import app.routes.datasets as dr
+    import app.capabilities as caps
+    did = _create_concept_free_dataset(client)
+    monkeypatch.setattr(svc, 'detect_head_bbox', lambda *a, **k: None)
+    monkeypatch.setattr(dr, 'gpu_exclusive_vision_window', lambda: contextlib.nullcontext())
+    monkeypatch.setattr(caps, 'probe_ollama_model', lambda *a, **k: {'ok': False, 'detail': 'not ready'})
+    resp = client.post(f'/api/dataset/{did}/ref', data={
+        'file': (io.BytesIO(_png(400, 1024)), 'ref.png'), 'crop': '1'},
+        content_type='multipart/form-data')
+    assert resp.status_code == 200
+    assert 'kept the full image' in resp.json['warning']
+    path = os.path.join(svc._dataset_dir(did), resp.json['ref_filename'])
+    assert Image.open(path).size == (400, 1024)
+    with client.application.app_context():
+        ok, detected = svc.recrop_reference_auto('local', did)
+        assert ok and not detected
+        assert Image.open(path).size == (400, 1024)

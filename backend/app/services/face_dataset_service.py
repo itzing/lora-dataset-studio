@@ -4507,6 +4507,8 @@ def recrop_reference_auto(user_id, dataset_id):
             return False, False
         webp, detected = face_crop_to_square_webp(
             raw, pad=REF_CROP_PAD, return_detected=True)
+        if not detected:
+            webp = normalize_to_webp(raw, size=1024)
         with open(_ref_path(ds), 'wb') as fh:
             fh.write(webp)
         invalidate_reference_edit(dataset_id)    # a pending Before/After is now stale
