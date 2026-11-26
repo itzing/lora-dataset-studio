@@ -1,6 +1,6 @@
 import { CORE_ENGINE_CATALOG, engineSettingsOptions } from '../../engines/catalog.js'
 import { useState } from 'react'
-import { INPUT_CLASS, Card } from './primitives'
+import { INPUT_CLASS, Card, SecretField } from './primitives'
 import { SettingsGroup, SettingsGroupsToc, useSettingsGroupProps } from './SettingsGroupsView'
 import { ENGINES_GROUPS } from './settingsGroups'
 import KleinLoraCombobox, { useKleinGenerationLoras } from './KleinLoraCombobox'
@@ -978,7 +978,23 @@ export default function EnginesSection(props) {
       <SettingsGroupsToc sectionId="engines" groups={ENGINES_GROUPS} />
 
       <SettingsGroup {...groupProps(group1)}>
-      <Card title="Engines" help="Which engines appear in the generate panel, and which one is preselected. An engine a plugin brings is listed while that plugin is on.">
+      <Card id="engui-connection" title="Engui connection"
+        help="Generate dataset candidates through Engui and RunPod, without local ComfyUI. Save the connection before testing.">
+        <label className="block text-sm">Server origin
+          <input className={INPUT_CLASS} value={config.engui?.url || ''}
+            placeholder="https://engui.example.com"
+            onChange={e => setField('engui', 'url', e.target.value)} />
+        </label>
+        <label className="block text-sm">Workspace ID
+          <input className={INPUT_CLASS} value={config.engui?.workspace_id || ''}
+            onChange={e => setField('engui', 'workspace_id', e.target.value)} />
+        </label>
+        <SecretField {...props} field={{ key: 'LDS_ENGUI_TOKEN', label: 'Engui token',
+          help: 'Workspace-scoped read, generate and cancel permissions. Stored on the Studio server.',
+          testTarget: 'engui_krea' }} />
+        <p className="text-xs text-content-muted">Uses the Krea identity tuning below, the original shot catalog and one reference. Generation is billed by GPU time; no fixed per-image estimate. Extra local LoRA presets are not transferred.</p>
+      </Card>
+      <Card title="Engines"  help="Which engines appear in the generate panel, and which one is preselected. An engine a plugin brings is listed while that plugin is on.">
         <div>
           <label htmlFor="engine-default" className="block text-sm font-medium text-content">Default engine</label>
           <select
@@ -994,7 +1010,7 @@ export default function EnginesSection(props) {
         </div>
 
         <fieldset id="engines-enabled" className="scroll-mt-24">
-          <legend className="mb-1 block text-sm font-medium text-content">Enabled local engines</legend>
+          <legend className="mb-1 block text-sm font-medium text-content">Enabled core engines</legend>
           <div className="flex flex-col gap-2">
             {engineOptions.filter(o => coreEngineIds.has(o.id)).map((o) => (
               <label key={o.id} htmlFor={`engine-enabled-${o.id}`} className="flex items-center gap-2 text-sm text-content">

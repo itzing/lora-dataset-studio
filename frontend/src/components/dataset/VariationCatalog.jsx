@@ -769,7 +769,7 @@ export default function VariationCatalog({ datasetId = null, onGenerate, busy, g
     if (usable.length === engines.length) return;
     // The first usable card, API engines first then the local ones — the order
     // the historic fallback always followed.
-    const first = [...apiEngineIds(), ...localEngineIds()].find((id) => available[id]) || null;
+    const first = [...apiEngineIds(), ...engineIds()].find((id) => available[id]) || null;
     setEngines(usable.length ? usable : (first ? [first] : []));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [engines, availableKey]);
@@ -1174,6 +1174,15 @@ export default function VariationCatalog({ datasetId = null, onGenerate, busy, g
               {kreaHint}
             </a>
           )} />
+
+        <div className="flex flex-col gap-1">
+          <EngineCard id="engui_krea" checked={engines.includes('engui_krea')}
+            available={!!available.engui_krea} generating={generating} onToggle={toggleEngine}
+            title="Krea 2 Edit · Engui"
+            tags={<span>RunPod · GPU time billed</span>}
+            hint={<span className="text-xs">Original shot prompts and identity reference. One remote job at a time.</span>} />
+          <a href="#/settings/engines?focus=engui-connection" className="text-xs text-primary underline">Engui connection settings</a>
+        </div>
         {/* The plugins' cards: each spec names its card panel (`card`), and
             the core hands it the same facts every card gets — checked,
             available, its share of the shots — plus the capabilities and the
@@ -1225,7 +1234,7 @@ export default function VariationCatalog({ datasetId = null, onGenerate, busy, g
                     {name}
                     <span className="ml-2 font-normal text-content-muted">
                       {count} image{count === 1 ? '' : 's'}
-                      {price > 0 ? ` · ≈ $${price.toFixed(2)}` : ' · free'}
+                      {price === null ? ' · GPU time billed' : price > 0 ? ` · ≈ $${price.toFixed(2)}` : ' · free'}
                     </span>
                   </span>
                   <span className="text-content-subtle text-[0.625rem]">{desc}</span>
@@ -1402,14 +1411,14 @@ export default function VariationCatalog({ datasetId = null, onGenerate, busy, g
           is what got reported. It is the same GLOBAL key from either screen —
           same value, same widget, same scan — so the sentence above about every
           future run covers it too. */}
-      {isKrea && krAvailable && (
+      {((isKrea && krAvailable) || (engines.includes('engui_krea') && available.engui_krea)) && (
         <details className="rounded-lg border border-border bg-app/30 open:pb-2">
           <summary className="cursor-pointer select-none px-2.5 py-1.5 text-[0.75rem] text-content font-semibold">
             <Dna aria-hidden="true" className="mr-1 inline h-3.5 w-3.5 align-[-2px]" />Krea 2 Edit tuning
             <span className="ml-2 font-normal text-content-subtle text-[0.625rem]">
               reference grounding {groundingDescription(groundingValue)}
               {` · ${stepsValue} steps · reference pull ${refBoostValue} · identity ${identityStrengthValue}`}
-              {activeKreaLoraPreset && activeKreaLoraPreset.loras.length > 0
+              {isKrea && activeKreaLoraPreset && activeKreaLoraPreset.loras.length > 0
                 ? ` · LoRA preset: ${activeKreaLoraPreset.name}` : ''}
             </span>
           </summary>
@@ -1419,13 +1428,16 @@ export default function VariationCatalog({ datasetId = null, onGenerate, busy, g
               reference images are not used by this engine. Krea Fit v1.2 honors each selected
               card&rsquo;s framing and aspect ratio instead of forcing the source photo&rsquo;s shape.
             </p>
-            <p className="text-content-subtle text-[0.625rem]">
+            {isKrea ? <p className="text-content-subtle text-[0.625rem]">
               The engine&rsquo;s <b className="text-content-muted font-semibold">file paths</b> and
               its LoRA presets are defined in{' '}
               <SettingsLink section="engines" focus="krea-engine" tone="warning" className="text-[0.625rem]">
                 Settings › Image engines
               </SettingsLink>, which also carries these same four dials — one value either way.
-            </p>
+            </p> : <p className="text-content-subtle text-[0.625rem]">
+              Engui manages the Krea2 Turbo model and Identity Edit adapter. These four controls
+              are saved with each new candidate; queued candidates keep their original settings.
+            </p>}
             {/* The base model and all four dials, editable here. They save the
                 GLOBAL setting — the dials debounced through one shared saver, the
                 base model on pick. See the block comment. */}
@@ -1443,7 +1455,7 @@ export default function VariationCatalog({ datasetId = null, onGenerate, busy, g
               {/* The base itself, first: it is the coarsest control here, and the
                   one you reach for when the whole run looks wrong rather than
                   slightly off. Empty = let the resolver elect one. */}
-              <label className="flex flex-col gap-1 min-w-0">
+              {isKrea && krAvailable && <label className="flex flex-col gap-1 min-w-0">
                 <span className="text-content-muted text-[0.625rem]">Krea 2 base model</span>
                 <GlobalModelPicker
                   section="krea" field="base_model" slot="krea_base_model"
@@ -1451,7 +1463,7 @@ export default function VariationCatalog({ datasetId = null, onGenerate, busy, g
                   value={kreaBaseModel}
                   onSaved={setKreaBaseModel}
                 />
-              </label>
+              </label>}
               <KreaDial
                 id="krea-grounding-dial"
                 label="Reference grounding"
@@ -1523,7 +1535,7 @@ export default function VariationCatalog({ datasetId = null, onGenerate, busy, g
             {/* The preset picker. Unlike the two dials above it is genuinely
                 PER-RUN: it does not restate or write a stored value, it NAMES a
                 preset defined in Settings and rides in this batch's payload. */}
-            <div className="flex flex-col gap-1 pt-1 border-t border-white/10">
+            {isKrea && krAvailable && <div className="flex flex-col gap-1 pt-1 border-t border-white/10">
               <label className="flex items-center gap-2 text-content-muted text-[0.6875rem]">
                 <span className="whitespace-nowrap">LoRA preset</span>
                 <select value={kreaLoraPresetName} aria-label="Krea generation LoRA preset"
@@ -1567,7 +1579,7 @@ export default function VariationCatalog({ datasetId = null, onGenerate, busy, g
                 Not applied by the 🔄 single-image regenerate, and only the model side is
                 patched (a LoRA's text-encoder weights are ignored here).
               </p>
-            </div>
+            </div>}
           </div>
         </details>
       )}
@@ -2053,7 +2065,7 @@ export default function VariationCatalog({ datasetId = null, onGenerate, busy, g
           <span className="text-content-muted text-[0.6875rem]">
             {engines.map((e) => engineLabel(e)).join(' + ')}
             {' · '}
-            {runCost > 0 ? `≈ $${runCost.toFixed(2)}` : 'free'}
+            {runCost === null ? 'GPU time billed' : runCost > 0 ? `≈ $${runCost.toFixed(2)}` : 'free'}
           </span>
         )}
         {/* Never a silently empty batch: an unchecked engine grid, an empty shot

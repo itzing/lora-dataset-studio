@@ -1156,6 +1156,12 @@ export default function DatasetWorkspace({ ds, onBack }) {
           </button>
         )}
         <div className="ml-auto flex items-center gap-2">
+          <button type="button" disabled={kept !== 25 || !!keptUncaptioned}
+            title="Exactly 25 kept, captioned originals; no extra reference"
+            onClick={() => ds.exportZip(true)}
+            className="min-h-10 px-3 py-1.5 rounded-lg border border-border text-sm disabled:opacity-40">
+            Export 25 ({kept}/25)
+          </button>
           <button type="button" disabled={!kept} onClick={exportZipGuarded}
             className="min-h-10 lg:min-h-0 px-3 py-1.5 rounded-lg bg-gradient-primary text-gray-950 text-sm font-semibold disabled:opacity-40">
             <Download aria-hidden="true" className="mr-1.5 inline h-4 w-4 align-[-2px]" />Export ZIP ({kept})

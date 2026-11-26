@@ -902,7 +902,11 @@ def dataset_generate(dataset_id):
         except keh2.KreaModelsMissing as e:
             return _krea_missing_response(e)
     from ..services import local_dataset_engines
+    from ..services import engui_remote
     try:
+        if any(generator == engui_remote.ENGINE for generator, _ in batches):
+            engui_remote.preflight()
+
         for generator, _variations in batches:
             if local_dataset_engines.is_plugin_engine(generator):
                 local_dataset_engines.preflight(LOCAL_USER, dataset_id, generator)
@@ -928,6 +932,8 @@ def dataset_generate(dataset_id):
                 ids = svc.generate_variations_nanobanana(
                     current_app._get_current_object(), LOCAL_USER, dataset_id,
                     variations, multiplier, engine=generator)
+            elif generator == engui_remote.ENGINE:
+                ids = engui_remote.generate(LOCAL_USER, dataset_id, variations, multiplier)
             elif local_dataset_engines.is_plugin_engine(generator):
                 ids = local_dataset_engines.generate(
                     LOCAL_USER, dataset_id, variations, multiplier, engine=generator)
@@ -2233,8 +2239,9 @@ def dataset_image_rotate(image_id):
 @bp.get('/dataset/<int:dataset_id>/export')
 def dataset_export(dataset_id):
     try:
+        options = {'exact_25': True} if request.args.get('exact') == '25' else {}
         return _zip_download(
-            lambda output: svc.write_export_zip(LOCAL_USER, dataset_id, output),
+            lambda output: svc.write_export_zip(LOCAL_USER, dataset_id, output, **options),
             f'dataset_{dataset_id}.zip')
     except ValueError as e:
         return _map_error(e)

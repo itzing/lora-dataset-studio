@@ -227,11 +227,11 @@ def test_waiting_reads_share_scan_but_force_reads_changed_settings(app, monkeypa
             release.set()
         before = first.result(timeout=3)
         after = second.result(timeout=3)
-    assert before == {'model': 'before', 'key_set': False, 'training_visible': False}
-    assert after == ({'model': 'after', 'key_set': True, 'training_visible': False} if force else before)
+    assert before == {'model': 'before', 'key_set': False, 'training_visible': False, 'engines': {'engui_krea': False}}
+    assert after == ({'model': 'after', 'key_set': True, 'training_visible': False, 'engines': {'engui_krea': False}} if force else before)
     assert len(calls) == (2 if force else 1)
     # A force issued later is also a fresh read, even with a valid cache.
-    assert in_app(app, force=True) == {'model': 'after', 'key_set': True, 'training_visible': False}
+    assert in_app(app, force=True) == {'model': 'after', 'key_set': True, 'training_visible': False, 'engines': {'engui_krea': False}}
     assert len(calls) == (3 if force else 2)
 
 

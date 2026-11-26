@@ -7,6 +7,8 @@ import { setting } from '../topicBuilders.js';
 export const SETTINGS_FIELD_TOPICS = [
   // ---- Settings: per-field topics (kind 'setting') -----------------------
   // engines
+  setting('engui.connection', 'engines', 'engui-connection', 'Engui connection',
+    ['engui', 'runpod', 'remote', 'workspace', 'token', 'identity edit', 'dataset']),
   setting('engines.default', 'engines', 'engine-default', 'Default engine',
     ['default engine', 'engine', 'preselect', 'nanobanana', 'nano banana', 'chatgpt', 'klein', 'gpt-image',
      'openrouter']),

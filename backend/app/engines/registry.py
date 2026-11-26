@@ -29,15 +29,16 @@ from typing import Callable
 
 API = 'api'
 LOCAL = 'local'
+REMOTE = 'remote'
 
 
 @dataclass(frozen=True)
 class EngineSpec:
     id: str
     label: str                     # the human name the screens use ("Nano Banana Pro")
-    kind: str                      # 'api' | 'local'
+    kind: str                      # 'api' | 'local' | 'remote'
     order: int                     # canonical order: cards, primary pick, round-robin
-    rate_usd_per_image: float = 0.0
+    rate_usd_per_image: float | None = 0.0
     remote: bool = False           # renders somewhere else: does not hold the local GPU
     billable: bool = False
     secret: str | None = None      # the env / stored secret that lights it up
@@ -85,8 +86,8 @@ _specs: dict[str, EngineSpec] = {}
 
 
 def register(spec: EngineSpec, *, replace: bool = False) -> EngineSpec:
-    if spec.kind not in (API, LOCAL):
-        raise ValueError(f'engine {spec.id!r}: kind must be {API!r} or {LOCAL!r}')
+    if spec.kind not in (API, LOCAL, REMOTE):
+        raise ValueError(f'engine {spec.id!r}: kind must be {API!r}, {LOCAL!r} or {REMOTE!r}')
     if spec.local_preflight is not None or spec.local_enqueue is not None:
         if spec.kind != LOCAL or not all(callable(value) for value in
                                         (spec.local_preflight, spec.local_enqueue)):

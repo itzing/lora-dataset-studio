@@ -62,6 +62,11 @@ export const CORE_ENGINE_CATALOG = [
       title: 'text-indigo-200', text: 'text-indigo-300', icon: 'text-indigo-300',
       pill: 'bg-indigo-500/25 text-indigo-200', dot: 'bg-indigo-400',
     } },
+  { id: 'engui_krea', label: 'Krea 2 Edit · Engui', kind: 'remote', order: 2,
+    rate: null, remote: true, billable: true, referenceEdit: false, secret: 'LDS_ENGUI_TOKEN',
+    keyTestTarget: 'engui_krea', recommended: true,
+    settingsLabel: 'Krea 2 Edit (Engui, RunPod)', shortLabel: 'Krea (Engui)',
+    accent: NEUTRAL_ACCENT },
   { id: 'krea', label: 'Krea 2 Edit', kind: 'local', order: 1,
     rate: 0, remote: false, billable: false, secret: null, keyTestTarget: null,
     recommended: false, modelSettingKey: null,
@@ -93,7 +98,7 @@ export function engineCatalog() {
 export function engineSpec(id) { return engineCatalog().find((e) => e.id === id) }
 export function engineLabel(id) { const s = engineSpec(id); return s ? s.label : id }
 export function engineAccent(id) { const s = engineSpec(id); return (s && s.accent) || NEUTRAL_ACCENT }
-export function engineRate(id) { const s = engineSpec(id); return s ? (s.rate || 0) : 0 }
+export function engineRate(id) { const s = engineSpec(id); return s ? (s.billable && s.rate == null ? null : s.rate || 0) : 0 }
 
 /** Canonical engine order — drives the card order, the primary pick and the
  *  round-robin; local engines first (free, on the user's own GPU). */
@@ -115,14 +120,14 @@ export function recommendedEngineIds() { return engineCatalog().filter((e) => e.
 
 export function engineLabels() { return Object.fromEntries(engineCatalog().map((e) => [e.id, e.label])) }
 export function engineAccents() { return Object.fromEntries(engineCatalog().map((e) => [e.id, e.accent || NEUTRAL_ACCENT])) }
-export function engineRates() { return Object.fromEntries(engineCatalog().map((e) => [e.id, e.rate || 0])) }
+export function engineRates() { return Object.fromEntries(engineCatalog().map((e) => [e.id, e.billable && e.rate == null ? null : e.rate || 0])) }
 /** Which capability probe "Save & test" runs for an engine's key field. */
 export function keyTestTargets() {
   return Object.fromEntries(engineCatalog().filter((e) => e.keyTestTarget).map((e) => [e.id, e.keyTestTarget]))
 }
 /** The Settings dropdown rows, API engines first as they always were listed. */
 export function engineSettingsOptions() {
-  return [...apiEngineSpecs(), ...localEngineSpecs()].map((e) => ({ id: e.id, label: e.settingsLabel || e.label }))
+  return [...apiEngineSpecs(), ...engineCatalog().filter(e => e.kind !== 'api')].map((e) => ({ id: e.id, label: e.settingsLabel || e.label }))
 }
 /** The counted capability rows of the API engines, in canonical order. */
 export function apiEngineSetupRows() {

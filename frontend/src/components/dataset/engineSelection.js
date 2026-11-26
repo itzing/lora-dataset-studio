@@ -209,6 +209,7 @@ export function estimateCost(shotCount, engines, mode, { multiplier = 1, free = 
   const mult = Math.max(1, Number(multiplier) || 1);
   const list = canonicalEngines(engines);
   if (!list.length || !n) return 0;
+  if (list.some(e => engineRate(e) === null && !free.includes(e))) return null;
   const rate = (engine) => (free.includes(engine) ? 0 : engineRate(engine));
   if (mode === 'all') return list.reduce((sum, e) => sum + n * mult * rate(e), 0);
   // split: round-robin share, same arithmetic as distributeVariations.
@@ -222,7 +223,7 @@ export function estimateCost(shotCount, engines, mode, { multiplier = 1, free = 
  *  ("this will cost $X on …") without listing free lanes. */
 export function billingEngines(engines, { free = [] } = {}) {
   return canonicalEngines(engines).filter(
-    (e) => engineRate(e) > 0 && !free.includes(e));
+    (e) => (engineRate(e) === null || engineRate(e) > 0) && !free.includes(e));
 }
 
 /** Why Generate is unavailable, or null when it can run. The empty selection is

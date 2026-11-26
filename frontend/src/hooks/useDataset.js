@@ -1612,12 +1612,12 @@ export function useDataset() {
     return d;
   }, [currentId, toast]);
 
-  const exportZipFor = useCallback((datasetId) => {
+  const exportZipFor = useCallback((datasetId, exact25 = false) => {
     if (Number.isInteger(datasetId) && datasetId > 0) {
-      window.open(`/api/dataset/${datasetId}/export`, '_blank');
+      window.open(`/api/dataset/${datasetId}/export${exact25 ? '?exact=25' : ''}`, '_blank');
     }
   }, []);
-  const exportZip = useCallback(() => exportZipFor(currentId), [currentId, exportZipFor]);
+  const exportZip = useCallback((exact25 = false) => exportZipFor(currentId, exact25), [currentId, exportZipFor]);
 
   // Full portable backup (images + captions + settings) — distinct from the
   // training-format export. Restore creates a NEW dataset and opens it.

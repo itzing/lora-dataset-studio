@@ -944,6 +944,8 @@ def _start_workers(app):
     from .job_queue import queue_manager
     queue_manager.init_app(app)
     queue_manager.start()
+    from .services.engui_remote import start as start_engui
+    start_engui(app)
     try:
         from .services.lora_training import start_training_scheduler
         start_training_scheduler(app)

@@ -41,7 +41,7 @@ def test_probe_all_off_when_unconfigured(app, api_installed):
         from app import capabilities
         with patch('app.capabilities._http_ok', return_value=False):
             caps = capabilities.probe(force=True)
-    expected = {'klein': False, 'krea': False}
+    expected = {'klein': False, 'krea': False, 'engui_krea': False}
     if api_installed:
         expected.update(nanobanana=False, chatgpt=False, openrouter=False)
     assert caps['engines'] == expected

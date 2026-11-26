@@ -2521,7 +2521,7 @@ def _plugin_capabilities(caps):
             logging.getLogger(__name__).warning('plugin %s capability %s failed', pid, key)
             errors[key] = {'plugin': pid, 'error': 'Capability probe failed.'}
     for spec in all_specs():
-        if spec.plugin and plugin_available(spec.plugin) and spec.probe:
+        if spec.probe and (not spec.plugin or plugin_available(spec.plugin)):
             try:
                 caps.setdefault('engines', {})[spec.id] = bool(spec.probe().get('ok'))
             except Exception:

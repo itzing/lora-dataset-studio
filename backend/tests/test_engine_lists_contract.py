@@ -17,7 +17,7 @@ _JS = (Path(__file__).resolve().parents[2]
        / 'frontend' / 'src' / 'components' / 'dataset' / 'engineSelection.js')
 
 
-def _js_catalog(api_enabled):
+def _js_catalog(api_enabled, *, editable=False):
     """Read the explicit spec rows owned by core and the optional API plugin."""
     paths = [_JS.parents[2] / 'engines' / 'catalog.js']
     if api_enabled:
@@ -25,9 +25,13 @@ def _js_catalog(api_enabled):
     rows = []
     for path in paths:
         text = path.read_text(encoding='utf-8')
-        entries = re.findall(r"\{ id: '([^']+)', label: '([^']+)', kind: '(api|local)', order: (\d+),", text)
-        assert entries, f'engine spec rows not found in {path.name}'
-        rows.extend(entries)
+        matches = list(re.finditer(r"\{ id: '([^']+)', label: '([^']+)', kind: '(api|local|remote)', order: (\d+),", text))
+        assert matches, f'engine spec rows not found in {path.name}'
+        for index, match in enumerate(matches):
+            end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
+            if editable and re.search(r'referenceEdit:\s*false', text[match.end():end]):
+                continue
+            rows.append(match.groups())
     return sorted(rows, key=lambda row: int(row[3]))
 
 
@@ -62,7 +66,7 @@ def test_the_api_engine_ids_are_identical_on_both_sides(app, api_enabled):
 ])
 def test_the_editable_engine_ids_are_identical_on_both_sides(app, api_enabled):
     """Local engines remain first; an unavailable plugin offers no edit engine."""
-    assert tuple(row[0] for row in _js_catalog(api_enabled)) == svc.editable_engines()
+    assert tuple(row[0] for row in _js_catalog(api_enabled, editable=True)) == svc.editable_engines()
 
 
 def test_the_local_engines_reference_support_matches_on_both_sides():

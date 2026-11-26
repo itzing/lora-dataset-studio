@@ -272,7 +272,9 @@ export default function DatasetGridItem({ img, datasetId, onStatus, onCaption, o
                 )}
               </>
             ) : (
-              <span className="text-content-subtle text-xs">…</span>
+              <span className="text-content-subtle text-xs" title={img.remote_progress?.detail || undefined}>
+                {img.remote_progress?.label || '…'}
+              </span>
             )}
           </div>
         )}

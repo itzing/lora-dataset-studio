@@ -108,6 +108,7 @@ export const CORE_GUIDE_ANCHORS = {
     "advanced-environment-overrides",
     "overview",
     "image-engines",
+    "engui-connection-experimental-fork",
     "trained-image-models",
     "engines",
     "krea-2-edit-local",

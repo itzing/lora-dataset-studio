@@ -28,7 +28,7 @@ load_dotenv(ENV_PATH)
 # REDDIT_CLIENT_ID / CIVITAI_API_KEY / PEXELS_API_KEY: scraping credentials
 # (Settings > Scraping & sources). Sources read their env var at request time,
 # and set_secrets() stamps os.environ on save, so changes apply without restart.
-SECRET_KEYS = ('GEMINI_API_KEY', 'OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'HF_TOKEN',
+SECRET_KEYS = ('LDS_ENGUI_TOKEN', 'GEMINI_API_KEY', 'OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'HF_TOKEN',
                'HF_CLOUD_TOKEN', 'VAST_API_KEY', 'REDDIT_CLIENT_ID',
                'CIVITAI_API_KEY', 'PEXELS_API_KEY',
                # LM Studio's optional bearer token. It began life as an ordinary
@@ -91,6 +91,7 @@ _V3_KREA_REF_BOOST = 0.25
 _V3_KREA_STEPS = 8
 
 DEFAULTS = {
+    'engui': {'url': '', 'workspace_id': ''},
     'plugins': {'enabled': {}},
     # host: '127.0.0.1' = this machine only ; '0.0.0.0' = reachable from the LAN
     # (phone, tablet, another PC) — the Settings "Server" card's LAN toggle just

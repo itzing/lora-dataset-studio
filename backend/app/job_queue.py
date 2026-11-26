@@ -1579,6 +1579,10 @@ class JobQueueManager:
         """
         if job_type != 'image':
             return 'retry'
+        from .services.engui_remote import cancel_job as cancel_engui
+        remote_outcome = cancel_engui(job_id, user_id, commit=commit)
+        if remote_outcome is not None:
+            return remote_outcome
         with GPU_ARBITER_LOCK:
             query = ImageGenerationQueue.query.filter_by(job_id=str(job_id))
             if user_id is not None:

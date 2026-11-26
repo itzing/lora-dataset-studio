@@ -306,6 +306,9 @@ def _register_discovered(app, csrf, registry):
     for pid, record in registry.records.items():
         flag = enabled_map.get(pid)
         record.enabled = True if flag is None else bool(flag)
+        if not record.enabled and record.state != 'error':
+            record.state = 'disabled'
+            continue
         if record.state in ('error', 'incompatible'):
             continue
         record.state = 'pending' if record.enabled else 'disabled'

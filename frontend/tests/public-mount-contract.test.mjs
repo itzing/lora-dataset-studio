@@ -33,8 +33,8 @@ test.beforeEach(t => {
   resetRegistry(); setEnabled([])
 })
 
-test('zero plugins exposes the two public local engines and no product contribution', () => {
-  assert.deepEqual(engineIds(), ['klein', 'krea'])
+test('zero plugins exposes the local engines and the core Engui connection', () => {
+  assert.deepEqual(engineIds(), ['klein', 'krea', 'engui_krea'])
   for (const slot of ['studio.tab', 'engine.spec', 'improve.engine', 'training.launch', 'settings.group']) assert.deepEqual(contributions(slot), [])
   assert.deepEqual(canonicalEngines(['nanobanana', 'klein']), ['klein'])
   assert.equal(engineLabel('nanobanana'), 'nanobanana')

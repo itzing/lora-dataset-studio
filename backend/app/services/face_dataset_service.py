@@ -5348,6 +5348,20 @@ def dataset_payload(user_id, dataset_id):
         return None
     imgs = (FaceDatasetImage.query.filter_by(dataset_id=dataset_id)
             .order_by(FaceDatasetImage.id.desc()).all())
+    from ..models import EnguiDatasetJob
+    remote_jobs = {job.id: job for job in EnguiDatasetJob.query.filter_by(
+        dataset_id=dataset_id, user_id=str(user_id)).all()}
+
+    def remote_progress(image):
+        job = remote_jobs.get(image.job_id)
+        if not job or job.state in ('succeeded', 'failed', 'cancelled'):
+            return None
+        label = ('Stopping…' if job.cancel_requested else
+                 'Connection interrupted — retrying' if job.last_error else
+                 {'queued': 'Queued', 'uploading': 'Uploading reference…',
+                  'submitting': 'Sending job…', 'running': 'Waiting for result…'}.get(job.state, 'Waiting…'))
+        return {'state': job.state, 'label': label, 'detail': job.last_error}
+
     ref_size = image_pixel_size(_ref_path(ds)) if ds.ref_filename else None
     comp = {'face': 0, 'bust': 0, 'body': 0, 'back': 0}
     # Count each composition bucket's images originating from crops below
@@ -5458,6 +5472,7 @@ def dataset_payload(user_id, dataset_id):
                     # (see _image_engine) — the tile badge that makes a
                     # multi-engine run comparable. None = no badge.
                     'engine': _image_engine(i),
+                    'remote_progress': remote_progress(i),
                     'framing': i.framing, 'variation_label': i.variation_label,
                     'status': i.status, 'caption': i.caption,
                     'caption_short': i.caption_short,
@@ -10814,6 +10829,10 @@ def _sync_generate_activity(dataset_id):
             FaceDatasetImage.klein_model.is_(None),
             FaceDatasetImage.klein_model != KREA_ENGINE)).count():
         engine = KREA_ENGINE
+    if pending and not local.filter(db.or_(
+            FaceDatasetImage.klein_model.is_(None),
+            FaceDatasetImage.klein_model != 'engui_krea')).count():
+        engine = 'engui_krea'
     dataset_activity.sync_pending(dataset_id, 'generate', pending, engine=engine)
 
 
@@ -12337,6 +12356,9 @@ def regenerate_image(user_id, image_id, lora_strength=None, prompt=None, app=Non
         raise ValueError('reference image required')
     edited, stored_prompt, prompt, target = _rgn_resolve_target(
         img, prompt, engine)
+    if target == 'engui_krea':
+        from .engui_remote import regenerate
+        return regenerate(user_id, image_id, prompt)
     # Complete every fallible target-specific preflight before changing either
     # the row or its current file. Klein enqueue is itself part of preparation:
     # if the later DB transition fails, that exact new job is cancelled below.
@@ -12415,7 +12437,8 @@ def editable_engines():
     reason — and it was the reason the app's only FREE edit lane was invisible."""
     from ..engines.registry import available_specs
     return tuple(spec.id for spec in available_specs()
-                 if spec.local_enqueue is None or spec.extra.get('supports_reference_edit') is True)
+                 if spec.extra.get('supports_reference_edit') is not False
+                 and (spec.local_enqueue is None or spec.extra.get('supports_reference_edit') is True))
 
 
 def edit_engine_choice_message():
@@ -12944,7 +12967,7 @@ def _export_caption(ds, caption) -> str:
     return f"{ds.trigger_word}, {cap}" if cap else ds.trigger_word
 
 
-def write_export_zip(user_id: int, dataset_id: int, output: BinaryIO) -> None:
+def write_export_zip(user_id: int, dataset_id: int, output: BinaryIO, *, exact_25=False) -> None:
     """Training-ready ZIP in the PUBLIC-TOOL layout, not an app-internal format:
     one `10_<trigger>/` folder of `image.png` + same-stem `image.txt` caption
     pairs (captions carry the resolved trigger inline, except always-on Style
@@ -12960,6 +12983,16 @@ def write_export_zip(user_id: int, dataset_id: int, output: BinaryIO) -> None:
             .order_by(FaceDatasetImage.id.asc()).all())
     if not kept:
         raise ValueError('no kept images to export')
+    if exact_25:
+        if len(kept) != 25:
+            raise ValueError('Keep exactly 25 images before exporting this dataset.')
+        for img in kept:
+            if not img.filename or not os.path.isfile(_img_path(img)):
+                raise ValueError('A kept original is missing; restore it or select another image.')
+            if not (img.caption or '').strip():
+                raise ValueError('Caption all 25 kept images before exporting.')
+            with Image.open(_img_path(img)) as image:
+                image.verify()
     safe = ''.join(c for c in ds.name if c.isalnum() or c in ('-', '_')) or 'dataset'
     safe_trigger = ''.join(c for c in ds.trigger_word if c.isalnum() or c in ('-', '_')) or 'lora'
     folder = f"10_{safe_trigger}"
@@ -12972,7 +13005,7 @@ def write_export_zip(user_id: int, dataset_id: int, output: BinaryIO) -> None:
         # The reference row has no content caption. Exporting it for a Style set
         # would force either a blank sidecar or the internal run identifier into
         # training, both of which violate the always-on/content-only contract.
-        if ref_path and os.path.exists(ref_path) and not is_style(ds):
+        if ref_path and os.path.exists(ref_path) and not is_style(ds) and not exact_25:
             try:
                 rpng = io.BytesIO()
                 with Image.open(ref_path) as source:

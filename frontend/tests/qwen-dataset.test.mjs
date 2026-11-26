@@ -17,7 +17,7 @@ test('Qwen participates in local generation only while its plugin is enabled', (
   resetRegistry()
   assert.equal(registerDescriptor(descriptor, { guideOwnership: ownership }), true)
   setEnabled(['qwen_dataset'])
-  assert.deepEqual(engineIds(), ['klein', 'krea', 'qwen_dataset'])
+  assert.deepEqual(engineIds(), ['klein', 'krea', 'qwen_dataset', 'engui_krea'])
   assert.ok(localEngineIds().includes('qwen_dataset'))
   assert.deepEqual(pluginEngineSpecs().map(spec => spec.id), ['qwen_dataset'])
   assert.equal(pluginEngineSpecs()[0].remote, false)
@@ -45,7 +45,7 @@ test('Qwen sits beside Klein and Krea before the installed API cards', () => {
   assert.equal(registerDescriptor(apiEngines, { guideOwnership: apiOwnership }), true)
   assert.equal(registerDescriptor(descriptor, { guideOwnership: ownership }), true)
   setEnabled(['api_engines', 'qwen_dataset'])
-  assert.deepEqual(engineIds().slice(0, 4), ['klein', 'krea', 'qwen_dataset', 'nanobanana'])
+  assert.deepEqual(engineIds().slice(0, 5), ['klein', 'krea', 'qwen_dataset', 'engui_krea', 'nanobanana'])
   assert.deepEqual(pluginEngineSpecs().map(spec => spec.id), ['qwen_dataset', 'nanobanana', 'chatgpt', 'openrouter'])
 })
 

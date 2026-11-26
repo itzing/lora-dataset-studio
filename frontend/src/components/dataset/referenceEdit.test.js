@@ -39,8 +39,10 @@ test('every engine can edit the reference, including the local ones', () => {
   for (const e of apiEngineIds()) assert.ok(editEngines().includes(e), e);
 });
 
-test('editEngines() is derived from engineIds(), so it cannot drift from it', () => {
-  assert.deepEqual(editEngines(), [...engineIds()]);
+test('dataset-only remote engines do not leak into reference editing', () => {
+  assert.ok(engineIds().includes('engui_krea'));
+  assert.deepEqual(editEngines(), engineIds().filter(id => id !== 'engui_krea'));
+  assert.match(editBlockedReason('add glasses', 'engui_krea'), /Pick/);
   assert.notEqual(editEngines(), engineIds());   // a copy: mutating one can't move the other
 });
 

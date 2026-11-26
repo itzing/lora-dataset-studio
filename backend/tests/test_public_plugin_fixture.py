@@ -35,7 +35,7 @@ print(json.dumps({"imports": sorted(set(sys.modules) - before),
 def test_unmarked_app_keeps_store_empty(app):
     from app.engines import registry
     assert app.extensions['lds_plugins'].records == {}
-    assert set(registry.ids()) == {'klein', 'krea'}
+    assert set(registry.ids()) == {'klein', 'krea', 'engui_krea'}
     assert app.test_client().get('/api/video-bank').status_code == 404
 
 
@@ -76,7 +76,7 @@ def test_second_factory_boot_has_no_previous_engines_or_config(plugin_app_factor
     config.save_config({'canvas': {'external_loras': [{'filename': 'test-only.safetensors'}]}})
     second = plugin_app_factory()
     assert second.extensions['lds_plugins'].records == {}
-    assert set(registry.ids()) == {'klein', 'krea'}
+    assert set(registry.ids()) == {'klein', 'krea', 'engui_krea'}
     assert config.get('canvas.external_loras') == []
 
 

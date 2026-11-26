@@ -38,7 +38,7 @@ def test_api_dispatch_uses_registered_product_and_rechecks_captured_callable(fac
         with pytest.raises(ValueError, match='unavailable'):
             fn([], 'fixture')
         assert len(calls) == 1
-        assert {s['id'] for s in app.test_client().get('/api/engines').json['engines']} == {'klein', 'krea'}
+        assert {s['id'] for s in app.test_client().get('/api/engines').json['engines']} == {'klein', 'krea', 'engui_krea'}
 
 
 @pytest.mark.parametrize('changed', ['record_id', 'dataset_id', 'source', 'family', 'base_model', 'variant'])

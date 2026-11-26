@@ -84,6 +84,12 @@ import { SETUP_DEEP_LINK_STEPS } from './hooks/useSetupSteps.js';
 // Newest first. Prepend new waves at the top.
 export const WHATS_NEW = [
   {
+    id: '2026-11-26-engui-dataset', date: '2026-11-26',
+    title: 'Generate dataset candidates through Engui',
+    blurb: 'Use the Studio shot catalog with remote Krea Identity Edit, resume interrupted jobs and export exactly 25 captioned images.',
+    to: '/settings/engines' },
+
+  {
     id: '2026-11-25-zz-late-comfyui-renders', date: '2026-11-25',
     title: 'A render that finishes late is no longer lost',
     blurb: 'When ComfyUI finishes an image or a clip after the waiting time, its result now joins its place by itself, even with the Studio page closed. If ComfyUI reports an error instead, you see which node failed.',

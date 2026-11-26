@@ -1810,3 +1810,21 @@ class VideoTestClip(db.Model):
 
 # Persistent public contracts are also present in minimal embedded hosts.
 from lds_sdk import _legacy_schema, _video_schema  # noqa: E402,F401
+
+
+class EnguiDatasetJob(db.Model):
+    """Remote outbox retained after a dataset deletion until cancellation resolves."""
+    __tablename__ = 'engui_dataset_job'
+    id = db.Column(String(36), primary_key=True)
+    dataset_id = db.Column(Integer, nullable=False, index=True)
+    image_id = db.Column(Integer, nullable=False)
+    user_id = db.Column(String(36), nullable=False)
+    base_url = db.Column(Text, nullable=False)
+    workspace_id = db.Column(String(36), nullable=False)
+    reference_hash = db.Column(String(64), nullable=False)
+    payload_json = db.Column(Text, nullable=False)
+    state = db.Column(String(20), nullable=False, default='queued', index=True)
+    remote_job_id = db.Column(String(36))
+    cancel_requested = db.Column(db.Boolean, nullable=False, default=False)
+    last_error = db.Column(Text)
+    created_at = db.Column(DateTime, nullable=False, default=naive_utcnow)

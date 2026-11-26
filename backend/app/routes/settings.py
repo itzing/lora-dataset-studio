@@ -642,7 +642,7 @@ def test_connection(target):
         from lds_cloud_training import cloud_training
         return jsonify(_hf_cloud_secret_check(
             cloud_training.full_transformer_token_preflight()))
-    if target in ('gemini', 'openai', 'openrouter'):
+    if target in ('gemini', 'openai', 'openrouter', 'engui_krea'):
         from ..engines.registry import all_specs
         spec = next((s for s in all_specs() if s.key_test_target == target), None)
         return (jsonify(spec.probe()) if spec and spec.probe

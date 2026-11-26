@@ -51,6 +51,15 @@ If nothing on the grid tells you where to start, the line at the bottom opens th
 
 ## Image engines
 
+### Engui connection (experimental fork)
+
+**Krea 2 Edit · Engui** runs the existing Studio shot catalog on the configured Engui Krea2 Turbo endpoint, with its Identity Edit adapter. Enter the HTTPS server origin, workspace ID and a token with read/generate/cancel permissions. Save, then Test. The token is write-only and remains on the Studio server. Enable the engine and select its card in Generate.
+
+Each candidate is an ordinary RunPod job billed by GPU time; there is no fixed per-image price. Studio sends one candidate at a time and resumes the same attempt after a restart. Keep the same server/workspace while jobs are pending. The existing Krea identity tuning applies; extra local LoRA presets are not transferred. Captions use your existing Studio captioning setup or manual edits.
+
+**Export 25** requires exactly 25 kept, captioned images and omits the extra reference. The ordinary Export ZIP is unchanged. See [Engui integration](../engui-integration.md) for deployment and recovery details.
+
+
 This section controls the shared local image engines, **Klein** and **Krea 2 Edit**. Configure ComfyUI under **Local tools**. Additional engines appear when their plugin is active; their credentials and provider options live on that plugin's settings page.
 
 ### Trained image models
