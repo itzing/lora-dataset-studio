@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 import secrets
 import threading
+import tempfile
 import time
 import uuid
 from urllib.parse import urlsplit
@@ -31,9 +32,10 @@ _start_lock = threading.Lock()
 
 
 class BridgeError(ValueError):
-    def __init__(self, message, *, retryable=False):
+    def __init__(self, message, *, retryable=False, code=None):
         super().__init__(message)
         self.retryable = retryable
+        self.code = code
 
 
 def connection():
@@ -82,7 +84,7 @@ class Client:
             data = {}
         if response.status_code != 200:
             code = str(data.get('code') or 'HTTP_' + str(response.status_code))[:80]
-            raise BridgeError('Engui request failed (' + code + ').',
+            raise BridgeError('Engui request failed (' + code + ').', code=code,
                               retryable=(response.status_code >= 500 or response.status_code
                                          in (408, 409, 429) and code in
                                          ('REQUEST_FAILED', 'RATE_LIMITED', 'NOT_READY')))
@@ -134,6 +136,61 @@ def _root():
     root = Path(cfg.data_dir()) / 'engui-jobs'
     root.mkdir(parents=True, exist_ok=True)
     return root
+
+
+def _reference_upload(client, job, raw):
+    """Reuse a reference; replace only a confirmed unavailable transport copy.
+
+    The dispatch lock serializes this cache. A replacement ID is persisted before
+    HTTP, so a lost response/restart cannot allocate another upload. Submitted
+    attempts never call this helper: their frozen source and paid key stay intact.
+    """
+    original_id = str(uuid.uuid5(uuid.UUID(job.workspace_id),
+                                hashlib.sha256(client.token.encode()).hexdigest()
+                                + ':' + job.reference_hash))
+    cache_key = uuid.uuid5(uuid.UUID(original_id), client.base)
+    cache = _root() / (str(cache_key) + '.upload-id')
+    try:
+        upload_id = str(uuid.UUID(cache.read_text().strip()))
+    except FileNotFoundError:
+        upload_id = original_id
+    except ValueError:
+        raise BridgeError('Reference upload cache is invalid; repair its saved ID.',
+                          retryable=True) from None
+
+    def create(key):
+        return client.call('create_upload', input={
+            'requestKey': key, 'filename': 'reference.png', 'mimeType': 'image/png',
+            'sha256': job.reference_hash, 'byteLength': len(raw)})
+
+    try:
+        uploaded = create(upload_id)
+    except BridgeError as exc:
+        if exc.retryable or exc.code not in ('NOT_FOUND', 'OPERATION_RETIRED', 'MEDIA_UNAVAILABLE'):
+            raise
+        # An internal transport copy may become unavailable while Studio still
+        # owns pinned input. Never alter a retired receipt or historical source.
+        upload_id = str(uuid.uuid4())
+        with tempfile.NamedTemporaryFile(mode='w', dir=cache.parent, delete=False) as out:
+            temp = Path(out.name)
+            try:
+                out.write(upload_id + '\n')
+                out.flush()
+                os.fsync(out.fileno())
+            except BaseException:
+                temp.unlink(missing_ok=True)
+                raise
+        try:
+            os.replace(temp, cache)
+        finally:
+            temp.unlink(missing_ok=True)
+        uploaded = create(upload_id)
+    if uploaded.get('status') != 'ready':
+        client.transfer('PUT', uploaded['uploadUrl'], data=raw, mime='image/png')
+        uploaded = client.call('get_upload', uploadId=upload_id)
+    if uploaded.get('status') != 'ready':
+        raise BridgeError('Reference upload is not ready.', retryable=True)
+    return uploaded
 
 
 def _new_job(user_id, ds, img, variation):
@@ -320,16 +377,7 @@ def tick():
                 _finish(job, 'cancelled')
                 return True
             raw = (_root() / (job.reference_hash + '.png')).read_bytes()
-            upload_id = str(uuid.uuid5(uuid.UUID(job.workspace_id),
-                                      hashlib.sha256(client.token.encode()).hexdigest() + ':' + job.reference_hash))
-            uploaded = client.call('create_upload', input={
-                'requestKey': upload_id, 'filename': 'reference.png', 'mimeType': 'image/png',
-                'sha256': job.reference_hash, 'byteLength': len(raw)})
-            if uploaded.get('status') != 'ready':
-                client.transfer('PUT', uploaded['uploadUrl'], data=raw, mime='image/png')
-                uploaded = client.call('get_upload', uploadId=upload_id)
-            if uploaded.get('status') != 'ready':
-                raise BridgeError('Reference upload is not ready.', retryable=True)
+            uploaded = _reference_upload(client, job, raw)
             payload = json.loads(job.payload_json)
             payload['source'] = uploaded['source']
             job.payload_json = json.dumps(payload)

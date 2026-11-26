@@ -18,6 +18,8 @@ Captions remain Studio's feature: configure a supported captioning backend or ed
 
 The server commits the candidate and its attempt before sending it. A restart or interrupted submit retries the same idempotency key; it never invents a replacement paid attempt. Studio dispatches one candidate at a time. Cancellation retains the provider handle until Engui confirms completion/cancellation. Changing the server/workspace while jobs are pending pauses those jobs until their original connection is restored.
 
+Reference uploads use Engui internal input storage, not Gallery or Drafts. Clearing the Engui gallery does not remove Studio references. If an internal transport copy becomes unavailable, Studio creates a new copy from its pinned bytes before submitting a new candidate and persists the replacement upload ID across restarts. Already submitted attempts retain their original source and paid key; existing failed cards require an explicit Retry. Generated originals are downloaded into Studio; the bridge never adds them to Gallery.
+
 The token is stored server-side as `LDS_ENGUI_TOKEN` (environment or Studio's secret store), never in the browser's configuration response. The bridge uses the existing Engui encrypted inference transport and verifies original download size/SHA-256. Reference snapshots and received originals remain in Studio's data directory.
 
 ## Engui / worker requirements
