@@ -8,8 +8,9 @@ Tested against upstream public `v2` commit `d376986fd2287e7b56cdca5914e1c4c7838f
 - 39 focused generation/backend checks, including the existing local and multi-engine paths.
 - Full frontend suites: 5,192 core and 1,307 bundled tests passed; 10 bundled tests skipped. Final affected UI and tuning checks also passed.
 - Ruff, ESLint and the production frontend build passed.
-- Companion Engui bridge: 46 focused tests and production build passed; TypeScript diagnostics unchanged from its existing baseline.
-- Companion Krea worker: 16 CPU tests passed. A separate live GPU check is required before an operator enables the bridge.
+- Companion Engui bridge: 48 focused tests and production build passed, including signed-link origins behind HTTPS proxies and loopback hosts; TypeScript diagnostics unchanged from its existing baseline.
+- Companion Krea worker: 16 CPU tests passed. A single live synthetic Identity Edit check returned and decrypted an 832×1216 result at eight steps (12.032 seconds provider execution, 14.632 seconds queue). These are one technical check's timings, not a performance guarantee.
+- Installed Studio/Engui connection: capability discovery, signed upload and exact-byte/SHA-256 original download passed without another GPU request. Test transport files were cleaned and the synthetic Gallery probe was moved to Trash.
 
 ## Upstream baseline is not green on this Linux host
 
