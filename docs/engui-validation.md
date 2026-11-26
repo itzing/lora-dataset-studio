@@ -29,3 +29,10 @@ See [connection and workflow instructions](engui-integration.md). Keep this bran
 A real illustrated character exposed two setup pitfalls that the synthetic GPU transport test did not cover: the upstream default upload removed the head with a centered square, and Human prompts requested photographs. The fork now preserves the full frame by default and after unsuccessful automatic head detection, shows an uncropped reference preview, and documents the existing Anime catalog for drawn subjects. Explicit manual cropping remains honored.
 
 65 focused backend checks passed, including portrait upload → pinned remote reference with both head/feet markers, illustrated prompt selection, explicit manual cropping, failed head detection, HEIC import, original retention and remote/local multi-engine workflows. Ruff, ESLint and the frontend production build passed. No new GPU generation or identity-quality claim was made for this fix.
+
+
+## Gallery-independent reference uploads (2026-11-26)
+
+Dataset uploads now use registered internal files and separate receipts, never Gallery/Draft assets. The public MCP upload contract remains unchanged. 79 companion Engui checks passed, including internal-upload credential isolation, signed-link lane binding, legacy source compatibility, and encrypted dispatch through exact-original download with zero Gallery records. The production build and targeted lint passed, with no new TypeScript diagnostics against baseline.
+
+80 Studio queue/engine checks passed, including shared unavailable-reference recovery, interrupted upload reply/restart, unrelated errors, and uncertain-submit idempotency. Installed upload-only verification reused a pinned reference with exact bytes, left Gallery and Job IDs unchanged, and preserved existing results and failed cards. No new GPU generation or automatic retry was performed.
